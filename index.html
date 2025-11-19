@@ -1,35 +1,265 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Finance Budget Tracker</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Finance Budget Tracker</title>
+        <style>
+            :root{
+                --bg:#f6f7fb;
+                --card:#ffffff;
+                --muted:#6b7280;
+                --accent:#2563eb;
+                --danger:#ef4444;
+                --success:#10b981;
+                --glass: rgba(255,255,255,0.6);
+                font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            }
+            *{box-sizing:border-box}
+            body{margin:0;background:linear-gradient(180deg,#eef2ff 0%,var(--bg) 100%);color:#0f172a;padding:20px}
+            .container{max-width:1100px;margin:0 auto}
+            header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+            header h1{margin:0;font-size:1.4rem}
+            .controls{display:flex;gap:8px;align-items:center}
+            button{background:var(--accent);color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+            button.secondary{background:transparent;color:var(--accent);border:1px solid rgba(37,99,235,0.12)}
+            .layout{display:grid;grid-template-columns:360px 1fr;gap:20px;margin-top:20px}
+            .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+            form .row{display:flex;gap:8px;margin-bottom:10px}
+            label{font-size:0.85rem;color:var(--muted);display:block;margin-bottom:6px}
+            input[type="text"], input[type="number"], textarea, select{
+                width:100%;padding:10px;border-radius:8px;border:1px solid #e6edf3;background:transparent;font-size:0.95rem
+            }
+            .summary{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+            .summary .item{flex:1;min-width:120px;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(37,99,235,0.06),rgba(37,99,235,0.02));}
+            .summary .amount{font-weight:700;font-size:1.1rem}
+            .transactions{overflow:auto}
+            table{width:100%;border-collapse:collapse}
+            th,td{padding:10px;text-align:left;border-bottom:1px solid #f1f5f9}
+            th{font-size:0.85rem;color:var(--muted)}
+            .muted{color:var(--muted);font-size:0.9rem}
+            .text-danger{color:var(--danger)}
+            .text-success{color:var(--success)}
+            .small{font-size:0.85rem}
+            .flex-row{display:flex;gap:8px;align-items:center}
+            .actions{display:flex;gap:6px}
+            @media (max-width:900px){
+                .layout{grid-template-columns:1fr}
+                .summary{flex-direction:column}
+            }
+        </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Finance Budget Tracker</h1>
+            <div class="controls">
+                <div class="muted small">Local only • data stored in your browser</div>
+                <button id="exportBtn" title="Export transactions">Export CSV</button>
+                <button id="clearBtn" class="secondary" title="Clear all data">Clear All</button>
+            </div>
+        </header>
 
-    <h2>Simple Budget Tracker</h2>
+        <div class="layout">
+            <div>
+                <div class="card">
+                    <div class="summary" aria-hidden="false">
+                        <div class="item">
+                            <div class="muted">Total Income</div>
+                            <div id="totalIncome" class="amount text-success">$0.00</div>
+                        </div>
+                        <div class="item">
+                            <div class="muted">Total Expenses</div>
+                            <div id="totalExpense" class="amount text-danger">$0.00</div>
+                        </div>
+                        <div class="item">
+                            <div class="muted">Balance</div>
+                            <div id="balance" class="amount">$0.00</div>
+                        </div>
+                    </div>
 
-    <h3>Income</h3>
-    <form>
-        <label>Source:</label>
-        <input type="text" placeholder="e.g., Salary"><br><br>
+                    <hr />
 
-        <label>Amount:</label>
-        <input type="number" placeholder="Enter amount"><br><br>
-    </form>
+                    <form id="incomeForm" aria-label="Add income">
+                        <h3 style="margin:6px 0">Add Income</h3>
+                        <div class="row">
+                            <div style="flex:1">
+                                <label for="incomeDesc">Source</label>
+                                <input id="incomeDesc" type="text" placeholder="e.g., Salary" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div style="flex:1">
+                                <label for="incomeAmount">Amount</label>
+                                <input id="incomeAmount" type="number" step="0.01" placeholder="0.00" required>
+                            </div>
+                            <div style="width:120px">
+                                <label for="incomeDate">Date</label>
+                                <input id="incomeDate" type="date">
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;justify-content:flex-end">
+                            <button type="button" id="addIncome">Add Income</button>
+                        </div>
+                    </form>
 
-    <h3>Expenses</h3>
-    <form>
-        <label>Category:</label>
-        <input type="text" placeholder="e.g., Food, Rent"><br><br>
+                    <hr />
 
-        <label>Amount:</label>
-        <input type="number" placeholder="Enter amount"><br><br>
-    </form>
+                    <form id="expenseForm" aria-label="Add expense">
+                        <h3 style="margin:6px 0">Add Expense</h3>
+                        <div class="row">
+                            <div style="flex:1">
+                                <label for="expenseDesc">Category / Note</label>
+                                <input id="expenseDesc" type="text" placeholder="e.g., Rent, Food" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div style="flex:1">
+                                <label for="expenseAmount">Amount</label>
+                                <input id="expenseAmount" type="number" step="0.01" placeholder="0.00" required>
+                            </div>
+                            <div style="width:120px">
+                                <label for="expenseDate">Date</label>
+                                <input id="expenseDate" type="date">
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;justify-content:flex-end">
+                            <button type="button" id="addExpense">Add Expense</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-    <h3>Notes</h3>
-    <textarea rows="4" cols="40" placeholder="Write any notes..."></textarea>
+            <div>
+                <div class="card">
+                    <h3 style="margin:0 0 12px 0">Transactions</h3>
+                    <div class="transactions">
+                        <table id="txTable" aria-live="polite">
+                            <thead>
+                                <tr>
+                                    <th class="small">Date</th>
+                                    <th class="small">Type</th>
+                                    <th class="small">Description</th>
+                                    <th class="small">Amount</th>
+                                    <th class="small">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="txBody">
+                                <!-- rows go here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <br><br>
-    <button>Save Entry</button>
+    <script>
+        (function(){
+            const STORAGE_KEY = 'budget_tracker_entries_v1';
+            let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
+            const $ = id => document.getElementById(id);
+            const incomeDesc = $('incomeDesc');
+            const incomeAmount = $('incomeAmount');
+            const incomeDate = $('incomeDate');
+            const expenseDesc = $('expenseDesc');
+            const expenseAmount = $('expenseAmount');
+            const expenseDate = $('expenseDate');
+            const txBody = $('txBody');
+            const totalIncomeEl = $('totalIncome');
+            const totalExpenseEl = $('totalExpense');
+            const balanceEl = $('balance');
+            const exportBtn = $('exportBtn');
+            const clearBtn = $('clearBtn');
+
+            function save(){
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+            }
+
+            function formatMoney(n){
+                return new Intl.NumberFormat(undefined,{style:'currency',currency:'USD'}).format(n);
+            }
+
+            function addEntry(type,desc,amount,date){
+                const amt = Number(amount);
+                if(!desc || !isFinite(amt) || amt <= 0){
+                    alert('Please enter a valid description and amount greater than 0.');
+                    return;
+                }
+                const entry = {id:Date.now() + Math.random(), type, desc, amount: amt, date: date || new Date().toISOString().slice(0,10)};
+                entries.unshift(entry);
+                save();
+                render();
+                clearInputs(type);
+            }
+
+            function clearInputs(type){
+                if(type==='income'){ incomeDesc.value=''; incomeAmount.value=''; incomeDate.value=''; }
+                else { expenseDesc.value=''; expenseAmount.value=''; expenseDate.value=''; }
+            }
+
+            function deleteEntry(id){
+                if(!confirm('Delete this entry?')) return;
+                entries = entries.filter(e=>e.id !== id);
+                save();
+                render();
+            }
+
+            function render(){
+                txBody.innerHTML = '';
+                let incomeTotal = 0, expenseTotal = 0;
+                entries.forEach(e => {
+                    const tr = document.createElement('tr');
+                    const date = document.createElement('td'); date.textContent = e.date;
+                    const type = document.createElement('td'); type.textContent = e.type;
+                    const desc = document.createElement('td'); desc.textContent = e.desc;
+                    const amt = document.createElement('td'); amt.textContent = (e.type==='income'?'+ ':'- ') + formatMoney(e.amount);
+                    const actions = document.createElement('td');
+                    const del = document.createElement('button'); del.textContent='Delete'; del.className='secondary'; del.onclick = ()=> deleteEntry(e.id);
+                    actions.appendChild(del);
+                    tr.appendChild(date); tr.appendChild(type); tr.appendChild(desc); tr.appendChild(amt); tr.appendChild(actions);
+                    txBody.appendChild(tr);
+                    if(e.type==='income') incomeTotal += e.amount; else expenseTotal += e.amount;
+                });
+                totalIncomeEl.textContent = formatMoney(incomeTotal);
+                totalExpenseEl.textContent = formatMoney(expenseTotal);
+                balanceEl.textContent = formatMoney(incomeTotal - expenseTotal);
+            }
+
+            // Export CSV
+            function exportCSV(){
+                if(!entries.length){ alert('No entries to export'); return; }
+                const header = ['date','type','description','amount'];
+                const rows = entries.map(e => [e.date,e.type, '"'+String(e.desc).replace(/"/g,'""')+'"', e.amount]);
+                const csv = [header.join(','), ...rows.map(r=>r.join(','))].join('\n');
+                const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'budget-tracker.csv'; document.body.appendChild(a); a.click(); a.remove();
+                URL.revokeObjectURL(url);
+            }
+
+            function clearAll(){
+                if(!confirm('Clear all data? This cannot be undone.')) return;
+                entries = [];
+                save();
+                render();
+            }
+
+            // Bind events
+            $('addIncome').addEventListener('click', ()=> addEntry('income', incomeDesc.value.trim(), incomeAmount.value, incomeDate.value));
+            $('addExpense').addEventListener('click', ()=> addEntry('expense', expenseDesc.value.trim(), expenseAmount.value, expenseDate.value));
+            exportBtn.addEventListener('click', exportCSV);
+            clearBtn.addEventListener('click', clearAll);
+
+            // Initialize dates with today (optional)
+            const today = new Date().toISOString().slice(0,10);
+            if(!incomeDate.value) incomeDate.value = today;
+            if(!expenseDate.value) expenseDate.value = today;
+
+            render();
+        })();
+    </script>
 </body>
 </html>
+
